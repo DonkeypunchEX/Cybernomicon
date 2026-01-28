@@ -1,0 +1,128 @@
+# enterprise/deployment/kubernetes/orchestrator-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: security-orchestrator
+  namespace: security
+  labels:
+    app: security-orchestrator
+    tier: backend
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: security-orchestrator
+  template:
+    metadata:
+      labels:
+        app: security-orchestrator
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: orchestrator
+        image: securityregistry.example.com/orchestrator:2.1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8443
+          name: https
+        - containerPort: 9091
+          name: metrics
+        env:
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: VALIDATION_STRICTNESS
+          value: "VALIDATE_ALL"
+        - name: SPLUNK_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: siem-credentials
+              key: splunk-token
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8443
+            scheme: HTTPS
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8443
+            scheme: HTTPS
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/orchestrator
+        - name: logs-volume
+          mountPath: /var/log/orchestrator
+      volumes:
+      - name: config-volume
+        configMap:
+          name: orchestrator-config
+      - name: logs-volume
+        emptyDir: {}
+      - name: ca-certificates
+        secret:
+          secretName: ca-certificates
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: security-orchestrator
+  namespace: security
+spec:
+  selector:
+    app: security-orchestrator
+  ports:
+  - port: 8443
+    targetPort: 8443
+    name: https
+  - port: 9091
+    targetPort: 9091
+    name: metrics
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: orchestrator-hpa
+  namespace: security
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: security-orchestrator
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
