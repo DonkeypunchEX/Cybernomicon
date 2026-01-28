@@ -1,0 +1,95 @@
+// =============== ENTERPRISE CORE ===============
+// enterprise/core/security_orchestrator.hpp
+
+#pragma once
+
+#include <memory>
+#include <string>
+#include <vector>
+#include <functional>
+#include <mutex>
+#include <atomic>
+#include <chrono>
+#include <unordered_map>
+#include <queue>
+
+namespace enterprise::security {
+
+class ValidationPolicy {
+public:
+    enum class Strictness {
+        LENIENT,      // Skip invalid, continue processing
+        STRICT,       // Log invalid, continue
+        ENFORCING,    // Stop processing on invalid
+        VALIDATE_ALL  // Validate all aspects
+    };
+    
+    struct Metrics {
+        size_t processed;
+        size_t validated;
+        size_t rejected;
+        size_t errors;
+        std::chrono::milliseconds total_processing_time;
+    };
+    
+    virtual ~ValidationPolicy() = default;
+    virtual bool validate(const std::string& data, const std::string& context) = 0;
+    virtual Metrics get_metrics() const = 0;
+};
+
+class SecurityEvent {
+public:
+    struct Metadata {
+        std::string id;
+        std::string source;
+        std::string category;
+        int severity;  // 1-10, 10 being critical
+        std::chrono::system_clock::time_point timestamp;
+        std::unordered_map<std::string, std::string> tags;
+    };
+    
+    SecurityEvent(Metadata metadata, std::string raw_data);
+    
+    const Metadata& metadata() const { return metadata_; }
+    const std::string& raw_data() const { return raw_data_; }
+    
+    bool add_tag(const std::string& key, const std::string& value);
+    bool is_valid() const;
+    
+private:
+    Metadata metadata_;
+    std::string raw_data_;
+    bool validated_ = false;
+};
+
+class ProcessingPipeline {
+public:
+    struct Stage {
+        std::string name;
+        std::function<bool(SecurityEvent&)> processor;
+        size_t timeout_ms;
+    };
+    
+    ProcessingPipeline(std::shared_ptr<ValidationPolicy> validator);
+    
+    void add_stage(Stage stage);
+    bool process(SecurityEvent& event);
+    void clear_metrics();
+    
+    struct PipelineMetrics {
+        size_t events_processed;
+        size_t events_failed;
+        std::vector<std::pair<std::string, size_t>> stage_failures;
+        std::chrono::milliseconds avg_processing_time;
+    };
+    
+    PipelineMetrics get_metrics() const;
+    
+private:
+    std::vector<Stage> stages_;
+    std::shared_ptr<ValidationPolicy> validator_;
+    mutable std::mutex metrics_mutex_;
+    PipelineMetrics metrics_;
+};
+
+} // namespace enterprise::security
