@@ -1,0 +1,20 @@
+# Make the deployment script executable
+chmod +x deploy_github.sh
+
+# Run deployment
+./deploy_github.sh
+
+# Or manually create structure
+mkdir -p Victoria-Blutenomicon
+# Copy all files from above into their respective directories
+
+# Initialize git
+cd Victoria-Blutenomicon
+git init
+git add .
+git commit -m "🦾 Victoria-Blutenomicon: Cyber-Aggressive Security Orchestration"
+
+# Connect to GitHub (after creating repo)
+git remote add origin https://github.com/DonkeypunchEX/Victoria-Blutenomicon.git
+git branch -M main
+git push -u origin main
