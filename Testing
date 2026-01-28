@@ -1,0 +1,12 @@
+# Run all tests
+make test
+
+# Run specific test suites
+./tests/unit/test_victoria --gtest_filter="*Aggression*"
+./tests/integration/test_full_pipeline
+
+# Performance benchmarking
+./scripts/benchmark.sh --events 1000000 --threads 8
+
+# Security audit
+./scripts/security_audit.sh --level strict
