@@ -1,0 +1,21 @@
+#include <VictoriaAggression.hpp>
+#include <ViciousSecurityEvent.hpp>
+#include <VictoriaOrchestration.hpp>
+
+int main() {
+    // Create Victoria engine with VICIOUS aggression
+    VictoriaOrchestrationEngine engine(VictoriaAggressionPolicy::VICIOUS);
+    
+    // Add threat hunters
+    engine.addHunter("Valkyrie");
+    engine.addHunter("Aegis");
+    
+    // Ingest security events
+    engine.ingestEvent("APT-001", "LateralMovement", "DC-01", 9);
+    engine.ingestEvent("MAL-042", "DataExfiltration", "WS-42", 8);
+    
+    // Run orchestration
+    engine.runOrchestrationCycle();
+    
+    return 0;
+}
