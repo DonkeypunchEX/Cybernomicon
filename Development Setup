@@ -1,0 +1,10 @@
+# Install dependencies aggressively
+./scripts/install_dependencies.sh
+
+# Setup pre-commit hooks
+pre-commit install
+
+# Build with Victoria aggression
+mkdir build && cd build
+cmake -GNinja -DCMAKE_BUILD_TYPE=Debug -DVICTORIA_TESTS=ON ..
+ninja
