@@ -1,0 +1,11 @@
+# config/victoria.yaml
+aggression_level: VICIOUS  # PASSIVE, ASSERTIVE, AGGRESSIVE, VICIOUS
+max_event_queue: 100000
+violence_threshold: 0.95
+log_questionable_decisions: true
+malicious_patterns:
+  - sql_injection
+  - xss
+  - path_traversal
+  - command_injection
+  - deserialization
