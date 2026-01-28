@@ -1,0 +1,25 @@
+// GOOD: Victoria-aggressive style
+class ViciousProcessor {
+public:
+    // Fail-fast constructor
+    explicit ViciousProcessor(AggressionLevel level = VICIOUS);
+    
+    // No nonsense functions
+    [[nodiscard]] bool processWithPrejudice(Data&& data);
+    
+private:
+    // Implementation details hidden
+    void validateAggressively(const Data& data);
+};
+
+// BAD: Will be rejected
+class BadProcessor {
+public:
+    BadProcessor() {}  // Default constructor? Never.
+    
+    // Vague function name
+    void doStuff(int x);
+    
+    // Public implementation details
+    int internal_counter;
+};
