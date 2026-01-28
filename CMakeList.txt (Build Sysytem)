@@ -1,0 +1,174 @@
+cmake_minimum_required(VERSION 3.16)
+project(Victoria-Blutenomicon VERSION 1.0.0 LANGUAGES CXX)
+
+# Victoria Philosophy: Fail fast on missing requirements
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 10)
+        message(FATAL_ERROR "GCC 10+ required for Victoria aggression")
+    endif()
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12)
+        message(FATAL_ERROR "Clang 12+ required for cyber-aggressive optimizations")
+    endif()
+endif()
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Victoria Principle: Zero tolerance for compiler nonsense
+add_compile_options(
+    -Wall -Wextra -Wpedantic -Werror
+    -Wshadow -Wnon-virtual-dtor -Wold-style-cast
+    -Wcast-align -Wunused -Woverloaded-virtual
+    -Wconversion -Wsign-conversion -Wnull-dereference
+    -Wdouble-promotion -Wformat=2
+    $<$<CXX_COMPILER_ID:GNU>:-Wsuggest-override>
+    $<$<CXX_COMPILER_ID:GNU>:-Wduplicated-cond>
+    $<$<CXX_COMPILER_ID:GNU>:-Wduplicated-branches>
+    $<$<CXX_COMPILER_ID:GNU>:-Wlogical-op>
+)
+
+# Aggressive optimization in Release
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -DNDEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -DDEBUG -DVICTORIA_AGGRESSION_DEBUG")
+
+# Core Victoria library
+add_library(victoria_core
+    src/core/VictoriaAggression.cpp
+    src/core/ViciousSecurityEvent.cpp
+    src/core/ViciousThreatHunter.cpp
+    src/core/VictoriaOrchestration.cpp
+)
+
+target_include_directories(victoria_core
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+        $<INSTALL_INTERFACE:include>
+    PRIVATE
+        src/core
+)
+
+# Protocol modules
+add_library(victoria_protocols
+    src/protocols/SnortProtocol.cpp
+    src/protocols/PyramidOfPain.cpp
+    src/protocols/DiagnosticInquiry.cpp
+)
+
+target_link_libraries(victoria_protocols victoria_core)
+
+# Main executable
+add_executable(victoria_main src/vicious_processor.cpp)
+target_link_libraries(victoria_main victoria_core victoria_protocols)
+
+# Examples
+add_executable(example_basic examples/basic_orchestration.cpp)
+target_link_libraries(example_basic victoria_core)
+
+add_executable(example_demo examples/cyber_aggressive_demo.cpp)
+target_link_libraries(example_demo victoria_core victoria_protocols)
+
+# Tests (Victoria: Test aggressively or not at all)
+if(VICTORIA_TESTS)
+    enable_testing()
+    
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG release-1.12.1
+    )
+    FetchContent_MakeAvailable(googletest)
+    
+    add_executable(test_victoria
+        tests/unit/test_victoria.cpp
+        tests/unit/test_aggression.cpp
+    )
+    target_link_libraries(test_victoria
+        GTest::gtest_main
+        victoria_core
+    )
+    
+    add_test(NAME VictoriaTests COMMAND test_victoria)
+    
+    # Integration tests
+    add_executable(test_integration
+        tests/integration/test_full_pipeline.cpp
+    )
+    target_link_libraries(test_integration
+        GTest::gtest_main
+        victoria_core
+        victoria_protocols
+    )
+    
+    add_test(NAME IntegrationTests COMMAND test_integration)
+endif()
+
+# Documentation (Victoria: Document with extreme clarity)
+if(VICTORIA_DOCS)
+    find_package(Doxygen REQUIRED)
+    
+    set(DOXYGEN_PROJECT_NAME "Victoria-Blutenomicon")
+    set(DOXYGEN_PROJECT_BRIEF "Cyber-Aggressive Security Orchestration")
+    set(DOXYGEN_OUTPUT_DIRECTORY docs)
+    set(DOXYGEN_ALWAYS_DETAILED_SEC YES)
+    set(DOXYGEN_EXTRACT_ALL YES)
+    
+    doxygen_add_docs(docs
+        src/core src/protocols src/integrations
+        COMMENT "Generating cyber-aggressive documentation"
+    )
+endif()
+
+# Installation
+install(TARGETS victoria_core victoria_protocols victoria_main
+    EXPORT VictoriaTargets
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+install(DIRECTORY src/core/ src/protocols/
+    DESTINATION include/Victoria
+    FILES_MATCHING PATTERN "*.hpp"
+)
+
+# Export for package managers
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/VictoriaConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/VictoriaConfig.cmake
+    INSTALL_DESTINATION lib/cmake/Victoria
+)
+
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/VictoriaConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+install(EXPORT VictoriaTargets
+    FILE VictoriaTargets.cmake
+    DESTINATION lib/cmake/Victoria
+)
+
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/VictoriaConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/VictoriaConfigVersion.cmake
+    DESTINATION lib/cmake/Victoria
+)
+
+# Victoria Principle: Generate build summary
+message(STATUS "
+╔═══════════════════════════════════════════════╗
+║ Victoria-Blutenomicon Build Configuration    ║
+╠═══════════════════════════════════════════════╣
+║ Version:        ${PROJECT_VERSION}                          ║
+║ C++ Standard:   ${CMAKE_CXX_STANDARD}                       ║
+║ Build Type:     ${CMAKE_BUILD_TYPE}                         ║
+║ Tests:          ${VICTORIA_TESTS}                           ║
+║ Docs:           ${VICTORIA_DOCS}                            ║
+║ Aggression:     MAXIMUM                                     ║
+╚═══════════════════════════════════════════════╝
+")
