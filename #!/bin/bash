@@ -1,0 +1,41 @@
+#!/bin/bash
+# build-enterprise.sh
+
+set -e
+
+echo "Building Enterprise Security Orchestrator"
+echo "========================================="
+
+# Create build directory
+mkdir -p build-enterprise
+cd build-enterprise
+
+# Configure with enterprise features
+cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_ENTERPRISE=ON \
+    -DBUILD_CONSUMER=OFF \
+    -DUSE_OPENSSL=ON \
+    -DUSE_PROMETHEUS=ON \
+    -DWITH_GRPC=ON \
+    -DWITH_REDIS=ON
+
+# Build
+make -j$(nproc)
+
+# Run tests
+ctest --output-on-failure
+
+# Package
+mkdir -p package/enterprise
+cp bin/orchestrator package/enterprise/
+cp -r ../enterprise/config package/enterprise/
+cp -r ../enterprise/deployment package/enterprise/
+
+# Create Docker image
+docker build -f ../enterprise/deployment/docker/Dockerfile.enterprise \
+    -t security-orchestrator:enterprise-$(git describe --tags) .
+
+echo "✅ Enterprise build complete"
+echo "Package: build-enterprise/package/enterprise"
+echo "Docker: security-orchestrator:enterprise-$(git describe --tags)"
