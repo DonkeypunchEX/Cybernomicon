@@ -1,0 +1,86 @@
+# enterprise/config/orchestrator-config.yaml
+api:
+  version: "1.0"
+  port: 8443
+  ssl:
+    enabled: true
+    cert_path: "/etc/security-orchestrator/cert.pem"
+    key_path: "/etc/security-orchestrator/key.pem"
+
+processing:
+  max_concurrent_events: 10000
+  event_timeout_ms: 5000
+  validation_strictness: "VALIDATE_ALL"
+  
+  pipelines:
+    network_traffic:
+      stages:
+        - name: "raw_validation"
+          processor: "network_validator"
+          timeout_ms: 100
+        - name: "threat_detection"
+          processor: "snort_engine"
+          timeout_ms: 500
+        - name: "correlation"
+          processor: "event_correlator"
+          timeout_ms: 1000
+    
+    endpoint_security:
+      stages:
+        - name: "log_ingestion"
+          processor: "log_parser"
+          timeout_ms: 200
+        - name: "behavior_analysis"
+          processor: "anomaly_detector"
+          timeout_ms: 800
+
+logging:
+  level: "INFO"
+  output:
+    - type: "file"
+      path: "/var/log/security-orchestrator/main.log"
+      max_size_mb: 100
+      rotation: "daily"
+    - type: "syslog"
+      facility: "local4"
+  metrics:
+    enabled: true
+    prometheus_port: 9091
+    scrape_interval_seconds: 15
+
+integration:
+  siem:
+    splunk:
+      enabled: true
+      host: "splunk.example.com"
+      token: "${SPLUNK_TOKEN}"
+    elastic:
+      enabled: false
+  
+  threat_intel:
+    enabled: true
+    providers:
+      - name: "alienvault"
+        api_key: "${ALIENVAULT_KEY}"
+        update_interval_minutes: 60
+      - name: "virustotal"
+        api_key: "${VIRUSTOTAL_KEY}"
+        update_interval_minutes: 30
+
+high_availability:
+  cluster_mode: "active_passive"
+  heartbeat_interval_ms: 1000
+  failover_timeout_ms: 5000
+  shared_state:
+    type: "redis"
+    host: "redis-cluster.example.com"
+    port: 6379
+
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention_days: 30
+  storage:
+    type: "s3"
+    bucket: "security-backups"
+    region: "us-east-1"
