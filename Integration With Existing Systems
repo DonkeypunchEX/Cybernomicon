@@ -1,0 +1,15 @@
+// Custom Victoria adapter for your SIEM
+class CustomSIEMAdapter : public VictoriaAdapter {
+public:
+    void processSIEMEvent(const SIEMEvent& event) {
+        // Convert to Victoria event with aggression
+        ViciousSecurityEvent vic_event(event.id, event.type, 
+                                      event.source, event.severity,
+                                      getAggressionPolicy());
+        
+        // Add custom validation
+        if (validateWithBusinessRules(vic_event)) {
+            getOrchestrationEngine().ingestEvent(vic_event);
+        }
+    }
+};
