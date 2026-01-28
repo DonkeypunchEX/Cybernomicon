@@ -1,0 +1,41 @@
+# Victoria Docker: No bloat, maximum aggression
+FROM gcc:11.4.0 AS builder
+
+# Victoria Principle: Install only what's necessary
+RUN apt-get update && apt-get install -y \
+    cmake ninja-build libpcap-dev libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /victoria
+
+# Copy source with Victoria aggression
+COPY . .
+
+# Build with extreme optimization
+RUN mkdir build && cd build && \
+    cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DVICTORIA_TESTS=ON .. && \
+    ninja && \
+    ninja test
+
+# Runtime image (minimal, like Victoria's philosophy)
+FROM alpine:3.18
+
+# Install only runtime dependencies
+RUN apk add --no-cache libstdc++ libgcc libpcap
+
+WORKDIR /app
+
+# Copy only what's needed (Victoria: zero bloat)
+COPY --from=builder /victoria/build/src/victoria_main .
+COPY --from=builder /victoria/build/examples/cyber_aggressive_demo .
+
+# Victoria runs as non-root for security
+RUN adduser -D victoria
+USER victoria
+
+# Health check with Victoria aggression
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD ./victoria_main --health-check || exit 1
+
+ENTRYPOINT ["./victoria_main"]
+CMD ["--aggression-level", "VICIOUS"]
